@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Word Adventure Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff4d6;--card:#fff;--ink:#2b2350;--sub:#6b6394;--pri:#7c4dff;--good:#21b573;--goodbg:#d8f7e7;--bad:#ff7a59;--gold:#ffc53d;--line:#e6dcff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1e1a3a;--card:#2c2658;--ink:#fff;--sub:#c9c0f5;--line:#463e85;--goodbg:#1c4d3a}}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Fredoka','Comic Sans MS',system-ui,sans-serif;font-size:20px;min-height:100vh}
+#app{max-width:760px;margin:0 auto;padding:14px}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.bar{flex:1;height:18px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffc53d,#ff7a59);border-radius:99px;transition:width .5s}
+.pill{background:var(--card);border-radius:99px;padding:6px 14px;font-weight:600;white-space:nowrap}
+.mute{border:0;background:var(--card);border-radius:50%;width:44px;height:44px;font-size:22px;cursor:pointer}
+.card{background:var(--card);border-radius:28px;padding:22px;box-shadow:0 6px 0 var(--line)}
+.badge{display:inline-block;background:var(--pri);color:#fff;border-radius:99px;padding:4px 16px;font-weight:600;font-size:17px;margin-bottom:10px}
+.ctx{background:var(--bg);border-radius:18px;padding:12px 16px;margin:10px 0;line-height:1.6;font-size:18px}
+.ctx .pass{max-height:none}
+.blank{display:inline-block;min-width:90px;border-bottom:4px dashed var(--pri);text-align:center;font-weight:700;color:var(--pri)}
+.blank.done{color:var(--good);border-bottom-color:var(--good)}
+h1{font-size:34px;margin:6px 0}h2{font-size:26px;margin:4px 0 8px;line-height:1.3}
+p{margin:8px 0;color:var(--sub)}
+.ti{width:100%;font:inherit;font-size:24px;font-weight:600;text-align:center;color:var(--ink);background:var(--card);border:3px solid var(--pri);border-radius:20px;padding:14px;margin-top:14px}
+.ti.wrong{animation:wob .4s;border-color:var(--bad)}
+.opts{display:grid;gap:12px;margin-top:14px}
+@media(min-width:560px){.opts{grid-template-columns:1fr 1fr}}
+.opt{font:inherit;font-weight:600;font-size:21px;color:var(--ink);background:var(--card);border:3px solid var(--line);border-radius:20px;padding:16px;min-height:64px;cursor:pointer;box-shadow:0 5px 0 var(--line);transition:transform .1s}
+.opt:hover{transform:translateY(-2px);border-color:var(--pri)}
+.opt:focus-visible,.go:focus-visible,.mute:focus-visible{outline:4px solid var(--pri);outline-offset:3px}
+.opt.right{background:var(--goodbg);border-color:var(--good);box-shadow:0 5px 0 var(--good)}
+.opt.wrong{border-color:var(--bad);animation:wob .4s}
+.opt.hint{border-color:var(--gold);animation:pulse .8s 3}
+.opt[disabled]{cursor:default}
+@keyframes wob{25%{transform:rotate(-2deg)}75%{transform:rotate(2deg)}}
+@keyframes pulse{50%{transform:scale(1.04)}}
+.msg{min-height:40px;margin-top:14px;font-size:24px;font-weight:700;text-align:center}
+.go{font:inherit;font-weight:700;font-size:24px;color:#fff;background:var(--pri);border:0;border-radius:99px;padding:14px 38px;cursor:pointer;box-shadow:0 6px 0 #4a2ab8;display:block;margin:12px auto 0}
+.go:active{transform:translateY(4px);box-shadow:0 2px 0 #4a2ab8}
+.hero{text-align:center}.big{font-size:84px;line-height:1.1}
+.bounce{animation:bn 1.4s infinite}@keyframes bn{50%{transform:translateY(-12px)}}
+.say{border:0;background:var(--line);border-radius:99px;padding:6px 12px;font-size:18px;cursor:pointer;float:right}
+.fx{position:fixed;top:-40px;font-size:30px;pointer-events:none;animation:fall linear forwards;z-index:9}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+.stars{font-size:38px;letter-spacing:4px}
+@media(prefers-reduced-motion:reduce){.fx,.bounce,.opt.hint,.opt.wrong{animation:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const S=[
+{t:"Word Power!",e:"💪",items:[
+ {q:"A ____ relationship is one that is important and has a special quality.",o:["distant","meaningful","lazy","sad"],a:1},
+ {q:"Good ____ is the key to strong relationships.",o:["communication","action","suggestion","fiction"],a:0},
+ {q:"The word “distant” is the opposite of “____”.",o:["far","sad","close","angry"],a:2},
+ {q:"The suffix “-en” turns the word “strength” (strengthen) into a/an “____”.",o:["verb","adjective","adverb","noun"],a:0}]},
+{t:"Fill the Story 1",e:"📖",cloze:{text:"Staying close together needs good communication and a strong connection. Choosing the right way of {1} is very important. If we had talked face-to-face, we could have {2} any misunderstanding because we would have been honest about our feelings. Sometimes people become {3}, but if we had been more supportive, we could have {4} problems.",ans:["communication","avoided","distant","resolved"],bank:["courage","resolved","distant","avoided","communication"]}},
+{t:"Read & Answer",e:"🔍",pass:"Staying close to family and friends requires good communication. In our modern world, it is easy to send a quick text message, but this can sometimes make us feel more distant. A real connection is often built through face-to-face conversations where we can see expressions and hear the tone of voice. If we had only relied on text messages, we would have missed these important details. Being supportive is also a key. This means listening with care and offering help. If a friend is having a difficult time, a supportive conversation can make a huge difference. It takes courage to be honest about our feelings, but this honesty makes relationships more meaningful. To build strong, lasting connections, we must make time for real conversations. This determination to stay connected, even when life is busy, keeps our relationships healthy and strong.",items:[
+ {q:"The best title for this story is…",o:["The dangers of modern technology","How to send text messages","Building strong connections through communication","Why friendships end"],a:2},
+ {q:"____ helps make relationships more meaningful.",o:["Sending many text messages","Avoiding difficult topics","Being busy all the time","Having the courage to be honest"],a:3},
+ {q:"The word “supportive” means “____”.",o:["helpful","dishonest","selfish","powerful"],a:0}]},
+{t:"Magic Grammar",e:"✨",items:[
+ {q:"If I ____ you were sick, I would have visited you. (know)",o:["had known","knew","know"],a:0,ty:1},
+ {q:"She would have felt better if she ____ to her parents. (talk)",o:["had talked","talked","talks"],a:0,ty:1},
+ {q:"If they had been more supportive, he ____ so distant. (not / feel)",o:["would not have felt","would not feel","did not feel"],a:0,ty:1}]},
+{t:"Family & Friends",e:"👨‍👩‍👧",items:[
+ {q:"Mona has got two ____, a brother and a sister.",o:["parents","siblings","sons","daughters"],a:1},
+ {q:"____ is a link between people, things or ideas.",o:["Distraction","Connection","Conflict","Kind"],a:1},
+ {q:"His strength helped him ____ many difficulties.",o:["give up","overcome","create","support"],a:1},
+ {q:"The prefix “mis-” in “misunderstand” means “____”.",o:["before or earlier","not or without","wrongly or badly","again or back"],a:2}]},
+{t:"Fill the Story 2",e:"🧩",cloze:{text:"Good communication with family and friends is very important. When we {1} with others, we can share our thoughts and feelings. Sometimes {2} can cause problems, but a respectful tone helps to {3} those problems. Face-to-face talk is one good way to avoid misunderstanding because we can see each other's {4} expressions. We should make time for one another. It helps us feel closer and more supported in our daily lives.",ans:["connect","miscommunication","solve","facial"],bank:["solve","connect","facial","miscommunication","difficulties"]}}
+];
+const Q=[];
+S.forEach((s,si)=>{
+ if(s.cloze){const c=s.cloze;c.ans.forEach((w,i)=>{
+  const used=c.ans.slice(0,i);
+  Q.push({s,si,cz:{c,i},q:"Which word goes in blank "+(i+1)+"?",o:c.bank.filter(b=>!used.includes(b)),a:null,ans:w});});}
+ else s.items.forEach(it=>Q.push({s,si,q:it.q,o:it.o,a:it.a,ans:it.o[it.a],pass:s.pass,ty:it.ty}));
+});
+const app=document.getElementById('app');
+let n=0,stars=0,tries=0,done=false,muted=false,AC;
+function snd(f,d,t,dl){if(muted)return;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+ const o=AC.createOscillator(),g=AC.createGain(),s=AC.currentTime+(dl||0);o.type=t||'sine';o.frequency.value=f;
+ g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(.25,s+.02);g.gain.exponentialRampToValueAtTime(.0001,s+d);
+ o.connect(g);g.connect(AC.destination);o.start(s);o.stop(s+d+.05)}catch(e){}}
+const win=()=>[523,659,784,1047].forEach((f,i)=>snd(f,.25,'triangle',i*.09));
+const oops=()=>{snd(330,.18,'sine');snd(262,.25,'sine',.15)};
+const fanfare=()=>[523,523,659,784,659,784,1047].forEach((f,i)=>snd(f,.3,'triangle',i*.14));
+function burst(list,k){for(let i=0;i<k;i++){const e=document.createElement('span');e.className='fx';e.textContent=list[i%list.length];
+ e.style.left=Math.random()*100+'vw';e.style.animationDuration=(1.6+Math.random()*1.6)+'s';e.style.animationDelay=Math.random()*.4+'s';
+ document.body.appendChild(e);setTimeout(()=>e.remove(),4000)}}
+function say(t){if('speechSynthesis' in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t.replace(/____/g,'blank'));u.rate=.85;u.lang='en-US';speechSynthesis.speak(u)}}
+function topbar(){return `<div class="top"><div class="bar"><i style="width:${n/Q.length*100}%"></i></div><span class="pill">⭐ ${stars}</span><button class="mute" aria-label="Sound on or off" onclick="muted=!muted;this.textContent=muted?'🔇':'🔊'">${muted?'🔇':'🔊'}</button></div>`}
+function start(){app.innerHTML=`<div class="card hero"><div class="big bounce">🦉</div><h1>Word Adventure!</h1><p>Hi friend! I'm Ollie the Owl. Tap the right answer and collect shiny stars!</p><p>Don't worry. You can try again as many times as you like. 🌈</p><button class="go" onclick="show()">Let's go! 🚀</button></div>`}
+function ctxHTML(q){
+ if(q.cz){const {c,i}=q.cz;let h=c.text.replace(/\{(\d)\}/g,(m,d)=>{const k=+d-1;
+  return k<i?`<span class="blank done">${c.ans[k]}</span>`:`<span class="blank" data-k="${k}">( ${d} )</span>`});
+  return `<div class="ctx">${h}</div>`}
+ return q.pass?`<div class="ctx">${q.pass}</div>`:'';}
+function show(){
+ if(n>=Q.length)return end();
+ const q=Q[n];tries=0;done=false;
+ const opts=q.o.map((t,i)=>`<button class="opt" data-t="${t}">${t}</button>`).join('');
+ app.innerHTML=topbar()+`<div class="card"><span class="badge">${q.s.e} ${q.s.t}</span><button class="say" aria-label="Read aloud" onclick="say(Q[n].q)">🔊 Listen</button>${ctxHTML(q)}<h2>${q.q.replace(/____/g,'<span class="blank">&nbsp;&nbsp;&nbsp;&nbsp;</span>')}</h2>${q.ty?'<input id="ti" class="ti" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type your answer here \u270f\ufe0f" aria-label="Your answer"><button class="go" id="ck">Check \u2714</button>':'<div class="opts">'+opts+'</div>'}<div class="msg" id="msg"></div><div id="nx"></div></div>`;
+ app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>pick(b));
+ if(q.ty){const ti=document.getElementById('ti');document.getElementById('ck').onclick=check;ti.onkeydown=e=>{if(e.key==='Enter')check()};ti.focus()}
+}
+const good=["Super! 🌟","Amazing! 🎉","You got it! 🏆","Fantastic! 🚀","Brilliant! 💫","Great job! 🎈"];
+function pick(b){
+ if(done)return;const q=Q[n];
+ if(b.dataset.t===q.ans){b.classList.add('right');app.querySelectorAll('.opt').forEach(x=>x.disabled=true);okay(q)}
+ else{tries++;oops();b.classList.add('wrong');b.disabled=true;
+  document.getElementById('msg').textContent="Oops, try again! You can do it 💪";
+  if(tries>=2){const h=[...app.querySelectorAll('.opt')].find(x=>x.dataset.t===q.ans);h.classList.add('hint');document.getElementById('msg').textContent="Here's a little hint! 👀"}}
+}
+function okay(q){
+ done=true;stars++;win();burst(['⭐','🎉','✨','🌟'],22);
+ document.getElementById('msg').textContent=good[n%good.length];
+ document.getElementById('nx').innerHTML='<button class="go" id="nb">Next ➜</button>';
+ const nb=document.getElementById('nb');nb.onclick=()=>{n++;show()};nb.focus();
+ document.querySelector('.pill').textContent='⭐ '+stars;
+ if(q.cz){const bl=document.querySelector('.blank[data-k="'+q.cz.i+'"]');if(bl){bl.textContent=q.ans;bl.classList.add('done')}}
+}
+const norm=v=>v.toLowerCase().replace(/[\u2019]/g,"'").replace(/[^a-z' ]/g,'').replace(/n't\b/g,' not').replace(/\s+/g,' ').trim();
+function check(){
+ if(done)return;const q=Q[n],ti=document.getElementById('ti');if(!norm(ti.value)){ti.focus();return}
+ if(norm(ti.value)===norm(q.ans)){ti.value=q.ans;ti.disabled=true;document.getElementById('ck').remove();okay(q)}
+ else{tries++;oops();ti.classList.add('wrong');setTimeout(()=>ti.classList.remove('wrong'),400);
+  document.getElementById('msg').textContent=tries>=2?"Hint: type \u201c"+q.ans+"\u201d \ud83d\udc40":"Oops, try again! You can do it \ud83d\udcaa";ti.focus();ti.select()}
+}
+function end(){
+ fanfare();burst(['🎉','🏆','⭐','🎈','🌟','🎊'],60);
+ app.innerHTML=topbar()+`<div class="card hero"><div class="big bounce">🏆</div><h1>You did it!</h1><div class="stars">⭐⭐⭐⭐⭐</div><h2>${stars} stars collected!</h2><p>You are a Word Superstar! Great work, friend! 🦉💜</p><button class="go" onclick="n=0;stars=0;start()">Play again 🔁</button></div>`;
+}
+start();
+</script>
+</body>
+</html>
